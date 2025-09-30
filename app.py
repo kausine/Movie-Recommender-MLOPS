@@ -42,7 +42,7 @@ def recommend(user_id: int = Query(..., description="User ID"),
     recs = recommend_top_n(user_id, model, movies, n)
     return {"user_id": user_id, "recommendations": recs}
 
-# 👇 Add this new route
+
 @app.get("/")
 def read_root():
     return {"message": "Movie Recommender API is live! 🚀 Use /recommend?user_id=1&n=5"}
