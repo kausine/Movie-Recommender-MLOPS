@@ -20,16 +20,21 @@ id_to_title = movies.set_index('id')['title'].to_dict()
 app = FastAPI(title="Movie Recommender API")
 
 def recommend_top_n(user_id, model, movies_df, n=5):
+    # ensure movie ids are native ints
     movie_ids = pd.to_numeric(movies_df['id'], errors='coerce').dropna().astype(int).unique()
-    user_rated = ratings[ratings['userId'] == user_id]['movieId'].values
+    # user rated movies (native ints)
+    user_rated = ratings[ratings['userId'] == user_id]['movieId'].astype(int).values
     predictions = []
     for mid in movie_ids:
-        if mid not in user_rated:
-            pred = model.predict(user_id, mid)
-            predictions.append((mid, pred.est))
+        if int(mid) not in user_rated:
+            pred = model.predict(int(user_id), int(mid))
+            # pred.est can be numpy.float64 -> cast to native float
+            predictions.append((int(mid), float(pred.est)))
+    # sort and pick top-n
     predictions.sort(key=lambda x: x[1], reverse=True)
     top_n = predictions[:n]
-    return [(mid, id_to_title.get(mid, "Unknown"), round(score, 2)) for mid, score in top_n]
+    # return native-typed tuples: (int, str, float)
+    return [(int(mid), str(id_to_title.get(int(mid), "Unknown")), float(score)) for mid, score in top_n]
 
 @app.get("/recommend")
 def recommend(user_id: int = Query(..., description="User ID"),
